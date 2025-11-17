@@ -417,3 +417,213 @@ function createWarningHTML(warning) {
     if (!warning) return '';
     return `<div class="warning-message" role="alert">${warning}</div>`;
 }
+
+// ============================================
+// 保険料控除のバリデーション（Phase 3）
+// ============================================
+
+/**
+ * 保険料金額のバリデーション
+ * @param {string|number} amount - 保険料金額
+ * @param {string} label - 項目名
+ * @returns {object} { valid: boolean, error: string, warning: string }
+ */
+function validateInsuranceAmount(amount, label = '保険料') {
+    const result = { valid: true, error: null, warning: null };
+
+    if (!amount || amount === '' || amount === '0') {
+        // 空またはゼロは許可（任意項目）
+        return result;
+    }
+
+    const numValidation = validateNumber(amount, true);
+    if (!numValidation.valid) {
+        return { ...result, ...numValidation };
+    }
+
+    const numValue = parseFormattedNumber(amount);
+
+    // 高額な保険料の警告
+    if (numValue > 1000000) {
+        result.warning = `${label}が100万円を超えています。金額をご確認ください`;
+    }
+
+    // 妥当性チェック（年間保険料として極端に高額）
+    if (numValue > 5000000) {
+        result.valid = false;
+        result.error = `${label}が高額すぎます。年間保険料として妥当な金額を入力してください`;
+        return result;
+    }
+
+    return result;
+}
+
+/**
+ * 生命保険料控除フォームのバリデーション
+ * @param {object} formData - フォームデータ
+ * @returns {object} { valid: boolean, errors: object }
+ */
+function validateLifeInsuranceForm(formData) {
+    const errors = {};
+    let valid = true;
+
+    // 一般生命保険料（新制度）
+    if (formData.generalNewAmount) {
+        const validation = validateInsuranceAmount(formData.generalNewAmount, '一般生命保険料（新制度）');
+        if (!validation.valid) {
+            errors.generalNewAmount = validation.error;
+            valid = false;
+        }
+    }
+
+    // 一般生命保険料（旧制度）
+    if (formData.generalOldAmount) {
+        const validation = validateInsuranceAmount(formData.generalOldAmount, '一般生命保険料（旧制度）');
+        if (!validation.valid) {
+            errors.generalOldAmount = validation.error;
+            valid = false;
+        }
+    }
+
+    // 介護医療保険料
+    if (formData.medicalNewAmount) {
+        const validation = validateInsuranceAmount(formData.medicalNewAmount, '介護医療保険料');
+        if (!validation.valid) {
+            errors.medicalNewAmount = validation.error;
+            valid = false;
+        }
+    }
+
+    // 個人年金保険料（新制度）
+    if (formData.pensionNewAmount) {
+        const validation = validateInsuranceAmount(formData.pensionNewAmount, '個人年金保険料（新制度）');
+        if (!validation.valid) {
+            errors.pensionNewAmount = validation.error;
+            valid = false;
+        }
+    }
+
+    // 個人年金保険料（旧制度）
+    if (formData.pensionOldAmount) {
+        const validation = validateInsuranceAmount(formData.pensionOldAmount, '個人年金保険料（旧制度）');
+        if (!validation.valid) {
+            errors.pensionOldAmount = validation.error;
+            valid = false;
+        }
+    }
+
+    return { valid, errors };
+}
+
+/**
+ * 地震保険料控除フォームのバリデーション
+ * @param {object} formData - フォームデータ
+ * @returns {object} { valid: boolean, errors: object }
+ */
+function validateEarthquakeInsuranceForm(formData) {
+    const errors = {};
+    let valid = true;
+
+    // 地震保険料
+    if (formData.earthquakeAmount) {
+        const validation = validateInsuranceAmount(formData.earthquakeAmount, '地震保険料');
+        if (!validation.valid) {
+            errors.earthquakeAmount = validation.error;
+            valid = false;
+        }
+    }
+
+    // 旧長期損害保険料
+    if (formData.oldLongTermAmount) {
+        const validation = validateInsuranceAmount(formData.oldLongTermAmount, '旧長期損害保険料');
+        if (!validation.valid) {
+            errors.oldLongTermAmount = validation.error;
+            valid = false;
+        }
+    }
+
+    return { valid, errors };
+}
+
+/**
+ * 社会保険料控除フォームのバリデーション
+ * @param {object} formData - フォームデータ
+ * @returns {object} { valid: boolean, errors: object }
+ */
+function validateSocialInsuranceForm(formData) {
+    const errors = {};
+    let valid = true;
+
+    // 国民年金保険料
+    if (formData.nationalPension) {
+        const validation = validateInsuranceAmount(formData.nationalPension, '国民年金保険料');
+        if (!validation.valid) {
+            errors.nationalPension = validation.error;
+            valid = false;
+        }
+    }
+
+    // 国民健康保険料
+    if (formData.nationalHealth) {
+        const validation = validateInsuranceAmount(formData.nationalHealth, '国民健康保険料');
+        if (!validation.valid) {
+            errors.nationalHealth = validation.error;
+            valid = false;
+        }
+    }
+
+    // その他社会保険料
+    if (formData.otherSocial) {
+        const validation = validateInsuranceAmount(formData.otherSocial, 'その他社会保険料');
+        if (!validation.valid) {
+            errors.otherSocial = validation.error;
+            valid = false;
+        }
+    }
+
+    return { valid, errors };
+}
+
+/**
+ * 小規模企業共済等掛金控除フォームのバリデーション
+ * @param {object} formData - フォームデータ
+ * @returns {object} { valid: boolean, errors: object }
+ */
+function validateSmallEnterpriseForm(formData) {
+    const errors = {};
+    let valid = true;
+
+    // iDeCo掛金
+    if (formData.iDeCoAmount) {
+        const validation = validateInsuranceAmount(formData.iDeCoAmount, 'iDeCo掛金');
+        if (!validation.valid) {
+            errors.iDeCoAmount = validation.error;
+            valid = false;
+        }
+
+        // iDeCoの上限額チェック（月額68,000円 = 年間816,000円）
+        const amount = parseFormattedNumber(formData.iDeCoAmount);
+        if (amount > 816000) {
+            errors.iDeCoAmount = 'iDeCo掛金の上限（年間81.6万円）を超えています';
+            valid = false;
+        }
+    }
+
+    // 小規模企業共済掛金
+    if (formData.mutualAidAmount) {
+        const validation = validateInsuranceAmount(formData.mutualAidAmount, '小規模企業共済掛金');
+        if (!validation.valid) {
+            errors.mutualAidAmount = validation.error;
+            valid = false;
+        }
+
+        // 小規模企業共済の上限額チェック（月額70,000円 = 年間840,000円）
+        const amount = parseFormattedNumber(formData.mutualAidAmount);
+        if (amount > 840000) {
+            errors.mutualAidAmount = '小規模企業共済掛金の上限（年間84万円）を超えています';
+            valid = false;
+        }
+    }
+
+    return { valid, errors };
+}
