@@ -27,7 +27,25 @@ const AppState = {
         // 所得金額調整控除申告書
         hasIncomeAdjustment: false,
         hasSpecialDisabled: false,
-        hasYoungDependent: false
+        hasYoungDependent: false,
+
+        // 保険料控除申告書
+        // 生命保険料控除
+        generalNewAmount: '',
+        generalOldAmount: '',
+        medicalNewAmount: '',
+        pensionNewAmount: '',
+        pensionOldAmount: '',
+        // 地震保険料控除
+        earthquakeAmount: '',
+        oldLongTermAmount: '',
+        // 社会保険料控除
+        nationalPension: '',
+        nationalHealth: '',
+        otherSocial: '',
+        // 小規模企業共済等掛金控除
+        iDeCoAmount: '',
+        mutualAidAmount: ''
     },
     results: {}
 };
@@ -116,6 +134,24 @@ function setupFormEvents() {
     setupCheckboxEvent('hasIncomeAdjustment', 'adjustment-section');
     setupCheckboxEvent('hasSpecialDisabled', null);
     setupCheckboxEvent('hasYoungDependent', null);
+
+    // 保険料控除（Phase 3）
+    // 生命保険料控除
+    setupInputEvent('generalNewAmount', 'generalNewAmount', true);
+    setupInputEvent('generalOldAmount', 'generalOldAmount', true);
+    setupInputEvent('medicalNewAmount', 'medicalNewAmount', true);
+    setupInputEvent('pensionNewAmount', 'pensionNewAmount', true);
+    setupInputEvent('pensionOldAmount', 'pensionOldAmount', true);
+    // 地震保険料控除
+    setupInputEvent('earthquakeAmount', 'earthquakeAmount', true);
+    setupInputEvent('oldLongTermAmount', 'oldLongTermAmount', true);
+    // 社会保険料控除
+    setupInputEvent('nationalPension', 'nationalPension', true);
+    setupInputEvent('nationalHealth', 'nationalHealth', true);
+    setupInputEvent('otherSocial', 'otherSocial', true);
+    // 小規模企業共済等掛金控除
+    setupInputEvent('iDeCoAmount', 'iDeCoAmount', true);
+    setupInputEvent('mutualAidAmount', 'mutualAidAmount', true);
 
     // ボタンイベント
     setupButtonEvents();
@@ -296,6 +332,11 @@ function calculateAll() {
     calculateSpouseDeduction();
     calculateSpecificDependentDeduction();
     calculateIncomeAdjustmentDeduction();
+    // Phase 3: 保険料控除
+    calculateLifeInsurance();
+    calculateEarthquakeInsurance();
+    calculateSocialInsurance();
+    calculateSmallEnterprise();
 }
 
 /**
@@ -782,6 +823,315 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ============================================
+// 保険料控除の計算と表示（Phase 3）
+// ============================================
+
+/**
+ * 生命保険料控除の計算と表示
+ */
+function calculateLifeInsurance() {
+    const { generalNewAmount, generalOldAmount, medicalNewAmount, pensionNewAmount, pensionOldAmount } = AppState.formData;
+
+    // 入力がない場合は非表示
+    if (!generalNewAmount && !generalOldAmount && !medicalNewAmount && !pensionNewAmount && !pensionOldAmount) {
+        hideResultSection('life-insurance-result');
+        return;
+    }
+
+    const data = {
+        generalNewAmount: parseFormattedNumber(generalNewAmount),
+        generalOldAmount: parseFormattedNumber(generalOldAmount),
+        medicalNewAmount: parseFormattedNumber(medicalNewAmount),
+        pensionNewAmount: parseFormattedNumber(pensionNewAmount),
+        pensionOldAmount: parseFormattedNumber(pensionOldAmount)
+    };
+
+    const result = calculateLifeInsuranceDeduction(data);
+
+    AppState.results.lifeInsurance = result;
+
+    displayLifeInsuranceResult();
+}
+
+/**
+ * 生命保険料控除の結果表示
+ */
+function displayLifeInsuranceResult() {
+    const result = AppState.results.lifeInsurance;
+    if (!result) return;
+
+    const resultSection = document.getElementById('life-insurance-result');
+    if (!resultSection) return;
+
+    resultSection.classList.remove('hidden');
+
+    let html = `
+        <div class="result-title">
+            <span>✓</span> 生命保険料控除の計算結果
+        </div>
+    `;
+
+    if (result.generalTotal > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">一般生命保険料控除</span>
+                <span class="result-value">${formatNumber(result.generalTotal)}円</span>
+            </div>
+        `;
+    }
+
+    if (result.medicalNew > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">介護医療保険料控除</span>
+                <span class="result-value">${formatNumber(result.medicalNew)}円</span>
+            </div>
+        `;
+    }
+
+    if (result.pensionTotal > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">個人年金保険料控除</span>
+                <span class="result-value">${formatNumber(result.pensionTotal)}円</span>
+            </div>
+        `;
+    }
+
+    html += `
+        <div class="result-highlight">
+            <div class="result-highlight-title">生命保険料控除合計額</div>
+            <div class="result-highlight-value">${formatNumber(result.total)}円</div>
+            <div class="alert alert-info mt-2">
+                保険料控除申告書の生命保険料控除欄に記入してください。（上限12万円）
+            </div>
+        </div>
+    `;
+
+    resultSection.innerHTML = html;
+}
+
+/**
+ * 地震保険料控除の計算と表示
+ */
+function calculateEarthquakeInsurance() {
+    const { earthquakeAmount, oldLongTermAmount } = AppState.formData;
+
+    if (!earthquakeAmount && !oldLongTermAmount) {
+        hideResultSection('earthquake-insurance-result');
+        return;
+    }
+
+    const result = calculateEarthquakeInsuranceDeduction(
+        parseFormattedNumber(earthquakeAmount),
+        parseFormattedNumber(oldLongTermAmount)
+    );
+
+    AppState.results.earthquakeInsurance = result;
+
+    displayEarthquakeInsuranceResult();
+}
+
+/**
+ * 地震保険料控除の結果表示
+ */
+function displayEarthquakeInsuranceResult() {
+    const result = AppState.results.earthquakeInsurance;
+    if (!result) return;
+
+    const resultSection = document.getElementById('earthquake-insurance-result');
+    if (!resultSection) return;
+
+    resultSection.classList.remove('hidden');
+
+    let html = `
+        <div class="result-title">
+            <span>✓</span> 地震保険料控除の計算結果
+        </div>
+    `;
+
+    if (result.earthquake > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">地震保険料控除</span>
+                <span class="result-value">${formatNumber(result.earthquake)}円</span>
+            </div>
+        `;
+    }
+
+    if (result.oldLongTerm > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">旧長期損害保険料控除</span>
+                <span class="result-value">${formatNumber(result.oldLongTerm)}円</span>
+            </div>
+        `;
+    }
+
+    html += `
+        <div class="result-highlight">
+            <div class="result-highlight-title">地震保険料控除合計額</div>
+            <div class="result-highlight-value">${formatNumber(result.total)}円</div>
+            <div class="alert alert-info mt-2">
+                保険料控除申告書の地震保険料控除欄に記入してください。（上限5万円）
+            </div>
+        </div>
+    `;
+
+    resultSection.innerHTML = html;
+}
+
+/**
+ * 社会保険料控除の計算と表示
+ */
+function calculateSocialInsurance() {
+    const { nationalPension, nationalHealth, otherSocial } = AppState.formData;
+
+    if (!nationalPension && !nationalHealth && !otherSocial) {
+        hideResultSection('social-insurance-result');
+        return;
+    }
+
+    const result = calculateSocialInsuranceDeduction(
+        parseFormattedNumber(nationalPension),
+        parseFormattedNumber(nationalHealth),
+        parseFormattedNumber(otherSocial)
+    );
+
+    AppState.results.socialInsurance = result;
+
+    displaySocialInsuranceResult();
+}
+
+/**
+ * 社会保険料控除の結果表示
+ */
+function displaySocialInsuranceResult() {
+    const result = AppState.results.socialInsurance;
+    if (!result || result.total === 0) return;
+
+    const resultSection = document.getElementById('social-insurance-result');
+    if (!resultSection) return;
+
+    resultSection.classList.remove('hidden');
+
+    let html = `
+        <div class="result-title">
+            <span>✓</span> 社会保険料控除の計算結果
+        </div>
+    `;
+
+    if (result.nationalPension > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">国民年金保険料</span>
+                <span class="result-value">${formatNumber(result.nationalPension)}円</span>
+            </div>
+        `;
+    }
+
+    if (result.nationalHealth > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">国民健康保険料</span>
+                <span class="result-value">${formatNumber(result.nationalHealth)}円</span>
+            </div>
+        `;
+    }
+
+    if (result.otherSocial > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">その他社会保険料</span>
+                <span class="result-value">${formatNumber(result.otherSocial)}円</span>
+            </div>
+        `;
+    }
+
+    html += `
+        <div class="result-highlight">
+            <div class="result-highlight-title">社会保険料控除合計額</div>
+            <div class="result-highlight-value">${formatNumber(result.total)}円</div>
+            <div class="alert alert-info mt-2">
+                保険料控除申告書の社会保険料控除欄に記入してください。（全額控除）
+            </div>
+        </div>
+    `;
+
+    resultSection.innerHTML = html;
+}
+
+/**
+ * 小規模企業共済等掛金控除の計算と表示
+ */
+function calculateSmallEnterprise() {
+    const { iDeCoAmount, mutualAidAmount } = AppState.formData;
+
+    if (!iDeCoAmount && !mutualAidAmount) {
+        hideResultSection('small-enterprise-result');
+        return;
+    }
+
+    const result = calculateSmallEnterpriseDeduction(
+        parseFormattedNumber(iDeCoAmount),
+        parseFormattedNumber(mutualAidAmount)
+    );
+
+    AppState.results.smallEnterprise = result;
+
+    displaySmallEnterpriseResult();
+}
+
+/**
+ * 小規模企業共済等掛金控除の結果表示
+ */
+function displaySmallEnterpriseResult() {
+    const result = AppState.results.smallEnterprise;
+    if (!result || result.total === 0) return;
+
+    const resultSection = document.getElementById('small-enterprise-result');
+    if (!resultSection) return;
+
+    resultSection.classList.remove('hidden');
+
+    let html = `
+        <div class="result-title">
+            <span>✓</span> 小規模企業共済等掛金控除の計算結果
+        </div>
+    `;
+
+    if (result.iDeCo > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">iDeCo掛金</span>
+                <span class="result-value">${formatNumber(result.iDeCo)}円</span>
+            </div>
+        `;
+    }
+
+    if (result.mutualAid > 0) {
+        html += `
+            <div class="result-item">
+                <span class="result-label">小規模企業共済掛金</span>
+                <span class="result-value">${formatNumber(result.mutualAid)}円</span>
+            </div>
+        `;
+    }
+
+    html += `
+        <div class="result-highlight">
+            <div class="result-highlight-title">小規模企業共済等掛金控除合計額</div>
+            <div class="result-highlight-value">${formatNumber(result.total)}円</div>
+            <div class="alert alert-info mt-2">
+                保険料控除申告書の小規模企業共済等掛金控除欄に記入してください。（全額控除）
+            </div>
+        </div>
+    `;
+
+    resultSection.innerHTML = html;
+}
 
 // DOMContentLoadedイベントでアプリケーションを初期化
 document.addEventListener('DOMContentLoaded', initApp);

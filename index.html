@@ -32,6 +32,9 @@
             <button class="tab-button" data-tab="adjustment" role="tab" aria-selected="false" aria-controls="adjustment-tab">
                 所得金額調整控除申告書
             </button>
+            <button class="tab-button" data-tab="insurance" role="tab" aria-selected="false" aria-controls="insurance-tab">
+                保険料控除申告書
+            </button>
         </nav>
 
         <!-- タブコンテンツ -->
@@ -356,6 +359,313 @@
 
             <!-- 所得金額調整控除の計算結果 -->
             <div id="adjustment-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+        </div>
+
+        <!-- 保険料控除申告書 -->
+        <div id="insurance-tab" class="tab-content" role="tabpanel">
+            <!-- 生命保険料控除 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">5</span>
+                        生命保険料控除
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    生命保険料控除は、一般生命保険料・介護医療保険料・個人年金保険料の3種類があり、合計で最大12万円の控除が受けられます。<br>
+                    平成24年1月1日以降の契約は「新制度」、平成23年12月31日以前の契約は「旧制度」として計算します。
+                </div>
+
+                <form id="life-insurance-form">
+                    <h3 class="mt-3 mb-2">一般生命保険料</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="generalNewAmount" class="form-label">
+                                新制度（平成24年1月1日以降）
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        平成24年1月1日以降に契約した生命保険の年間支払保険料を入力してください。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="generalNewAmount"
+                                class="form-input"
+                                placeholder="80,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="generalOldAmount" class="form-label">
+                                旧制度（平成23年12月31日以前）
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        平成23年12月31日以前に契約した生命保険の年間支払保険料を入力してください。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="generalOldAmount"
+                                class="form-input"
+                                placeholder="100,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+                    </div>
+
+                    <h3 class="mt-3 mb-2">介護医療保険料（新制度のみ）</h3>
+                    <div class="form-group">
+                        <label for="medicalNewAmount" class="form-label">
+                            年間支払保険料
+                            <span class="tooltip">
+                                <span class="help-icon">?</span>
+                                <span class="tooltip-text">
+                                    医療保険・がん保険・介護保険などの年間支払保険料を入力してください。新制度のみ対象です。
+                                </span>
+                            </span>
+                        </label>
+                        <input
+                            type="text"
+                            id="medicalNewAmount"
+                            class="form-input"
+                            placeholder="40,000"
+                            inputmode="numeric"
+                        >
+                    </div>
+
+                    <h3 class="mt-3 mb-2">個人年金保険料</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pensionNewAmount" class="form-label">
+                                新制度（平成24年1月1日以降）
+                            </label>
+                            <input
+                                type="text"
+                                id="pensionNewAmount"
+                                class="form-input"
+                                placeholder="80,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pensionOldAmount" class="form-label">
+                                旧制度（平成23年12月31日以前）
+                            </label>
+                            <input
+                                type="text"
+                                id="pensionOldAmount"
+                                class="form-input"
+                                placeholder="100,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 生命保険料控除の計算結果 -->
+            <div id="life-insurance-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+
+            <!-- 地震保険料控除 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">6</span>
+                        地震保険料控除
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    地震保険料控除は、地震保険料と旧長期損害保険料を合わせて最大5万円の控除が受けられます。
+                </div>
+
+                <form id="earthquake-insurance-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="earthquakeAmount" class="form-label">
+                                地震保険料
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        地震保険の年間支払保険料を入力してください。上限5万円。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="earthquakeAmount"
+                                class="form-input"
+                                placeholder="50,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oldLongTermAmount" class="form-label">
+                                旧長期損害保険料
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        平成18年12月31日以前に契約した長期損害保険の年間支払保険料。上限1.5万円。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="oldLongTermAmount"
+                                class="form-input"
+                                placeholder="15,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 地震保険料控除の計算結果 -->
+            <div id="earthquake-insurance-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+
+            <!-- 社会保険料控除 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">7</span>
+                        社会保険料控除
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    社会保険料控除は、国民年金・国民健康保険などの社会保険料の全額が控除されます。
+                </div>
+
+                <form id="social-insurance-form">
+                    <div class="form-group">
+                        <label for="nationalPension" class="form-label">
+                            国民年金保険料
+                            <span class="tooltip">
+                                <span class="help-icon">?</span>
+                                <span class="tooltip-text">
+                                    国民年金の年間支払保険料を入力してください。全額控除されます。
+                                </span>
+                            </span>
+                        </label>
+                        <input
+                            type="text"
+                            id="nationalPension"
+                            class="form-input"
+                            placeholder="200,000"
+                            inputmode="numeric"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nationalHealth" class="form-label">
+                            国民健康保険料
+                        </label>
+                        <input
+                            type="text"
+                            id="nationalHealth"
+                            class="form-input"
+                            placeholder="300,000"
+                            inputmode="numeric"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="otherSocial" class="form-label">
+                            その他社会保険料
+                        </label>
+                        <input
+                            type="text"
+                            id="otherSocial"
+                            class="form-input"
+                            placeholder="0"
+                            inputmode="numeric"
+                        >
+                    </div>
+                </form>
+            </div>
+
+            <!-- 社会保険料控除の計算結果 -->
+            <div id="social-insurance-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+
+            <!-- 小規模企業共済等掛金控除 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">8</span>
+                        小規模企業共済等掛金控除
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    小規模企業共済等掛金控除は、iDeCoや小規模企業共済の掛金の全額が控除されます。
+                </div>
+
+                <form id="small-enterprise-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="iDeCoAmount" class="form-label">
+                                iDeCo掛金
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        個人型確定拠出年金（iDeCo）の年間掛金額を入力してください。全額控除されます。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="iDeCoAmount"
+                                class="form-input"
+                                placeholder="276,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mutualAidAmount" class="form-label">
+                                小規模企業共済掛金
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        小規模企業共済の年間掛金額を入力してください。全額控除されます。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="mutualAidAmount"
+                                class="form-input"
+                                placeholder="840,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 小規模企業共済等掛金控除の計算結果 -->
+            <div id="small-enterprise-result" class="result-section hidden" role="region" aria-live="polite">
                 <!-- JavaScript で動的に生成 -->
             </div>
         </div>

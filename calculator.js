@@ -396,3 +396,196 @@ function parseFormattedNumber(str) {
     if (!str) return 0;
     return parseInt(str.toString().replace(/,/g, '')) || 0;
 }
+
+// ============================================
+// 保険料控除の計算（Phase 3）
+// ============================================
+
+/**
+ * 新制度の生命保険料控除額を計算
+ * @param {number} amount - 年間支払保険料額
+ * @returns {number} 控除額
+ */
+function calculateNewInsuranceDeduction(amount) {
+    const payment = parseInt(amount) || 0;
+
+    if (payment <= 0) {
+        return 0;
+    } else if (payment <= 20000) {
+        return payment;
+    } else if (payment <= 40000) {
+        return Math.floor(payment / 2 + 10000);
+    } else if (payment <= 80000) {
+        return Math.floor(payment / 4 + 20000);
+    } else {
+        return 40000; // 上限4万円
+    }
+}
+
+/**
+ * 旧制度の生命保険料控除額を計算
+ * @param {number} amount - 年間支払保険料額
+ * @returns {number} 控除額
+ */
+function calculateOldInsuranceDeduction(amount) {
+    const payment = parseInt(amount) || 0;
+
+    if (payment <= 0) {
+        return 0;
+    } else if (payment <= 25000) {
+        return payment;
+    } else if (payment <= 50000) {
+        return Math.floor(payment / 2 + 12500);
+    } else if (payment <= 100000) {
+        return Math.floor(payment / 4 + 25000);
+    } else {
+        return 50000; // 上限5万円
+    }
+}
+
+/**
+ * 生命保険料控除の合計額を計算
+ * @param {object} data - 保険料データ
+ * @returns {object} 控除額の詳細
+ */
+function calculateLifeInsuranceDeduction(data) {
+    const result = {
+        generalNew: 0,        // 一般生命保険料（新制度）
+        generalOld: 0,        // 一般生命保険料（旧制度）
+        generalTotal: 0,      // 一般生命保険料合計
+        medicalNew: 0,        // 介護医療保険料（新制度のみ）
+        pensionNew: 0,        // 個人年金保険料（新制度）
+        pensionOld: 0,        // 個人年金保険料（旧制度）
+        pensionTotal: 0,      // 個人年金保険料合計
+        total: 0              // 生命保険料控除合計
+    };
+
+    // 一般生命保険料（新制度）
+    if (data.generalNewAmount) {
+        result.generalNew = calculateNewInsuranceDeduction(data.generalNewAmount);
+    }
+
+    // 一般生命保険料（旧制度）
+    if (data.generalOldAmount) {
+        result.generalOld = calculateOldInsuranceDeduction(data.generalOldAmount);
+    }
+
+    // 一般生命保険料の合計（新旧併用時の特例計算）
+    if (result.generalNew > 0 && result.generalOld > 0) {
+        // 新旧両方ある場合：合計額の上限4万円
+        result.generalTotal = Math.min(result.generalNew + result.generalOld, 40000);
+    } else if (result.generalNew > 0) {
+        result.generalTotal = result.generalNew;
+    } else {
+        result.generalTotal = result.generalOld;
+    }
+
+    // 介護医療保険料（新制度のみ）
+    if (data.medicalNewAmount) {
+        result.medicalNew = calculateNewInsuranceDeduction(data.medicalNewAmount);
+    }
+
+    // 個人年金保険料（新制度）
+    if (data.pensionNewAmount) {
+        result.pensionNew = calculateNewInsuranceDeduction(data.pensionNewAmount);
+    }
+
+    // 個人年金保険料（旧制度）
+    if (data.pensionOldAmount) {
+        result.pensionOld = calculateOldInsuranceDeduction(data.pensionOldAmount);
+    }
+
+    // 個人年金保険料の合計（新旧併用時の特例計算）
+    if (result.pensionNew > 0 && result.pensionOld > 0) {
+        // 新旧両方ある場合：合計額の上限4万円
+        result.pensionTotal = Math.min(result.pensionNew + result.pensionOld, 40000);
+    } else if (result.pensionNew > 0) {
+        result.pensionTotal = result.pensionNew;
+    } else {
+        result.pensionTotal = result.pensionOld;
+    }
+
+    // 生命保険料控除合計（上限12万円）
+    result.total = Math.min(
+        result.generalTotal + result.medicalNew + result.pensionTotal,
+        120000
+    );
+
+    return result;
+}
+
+/**
+ * 地震保険料控除額を計算
+ * @param {number} earthquakeAmount - 地震保険料
+ * @param {number} oldLongTermAmount - 旧長期損害保険料
+ * @returns {object} 控除額の詳細
+ */
+function calculateEarthquakeInsuranceDeduction(earthquakeAmount, oldLongTermAmount) {
+    const result = {
+        earthquake: 0,      // 地震保険料控除額
+        oldLongTerm: 0,     // 旧長期損害保険料控除額
+        total: 0            // 合計
+    };
+
+    const earthquake = parseInt(earthquakeAmount) || 0;
+    const oldLongTerm = parseInt(oldLongTermAmount) || 0;
+
+    // 地震保険料控除（支払額全額、上限5万円）
+    if (earthquake > 0) {
+        result.earthquake = Math.min(earthquake, 50000);
+    }
+
+    // 旧長期損害保険料控除
+    if (oldLongTerm > 0) {
+        if (oldLongTerm <= 10000) {
+            result.oldLongTerm = Math.floor(oldLongTerm / 2);
+        } else if (oldLongTerm <= 20000) {
+            result.oldLongTerm = Math.floor(oldLongTerm / 2 + 5000);
+        } else {
+            result.oldLongTerm = 15000; // 上限1.5万円
+        }
+    }
+
+    // 合計（地震保険料と旧長期損害保険料の合計、上限5万円）
+    result.total = Math.min(result.earthquake + result.oldLongTerm, 50000);
+
+    return result;
+}
+
+/**
+ * 社会保険料控除額を計算（全額控除）
+ * @param {number} nationalPension - 国民年金保険料
+ * @param {number} nationalHealth - 国民健康保険料
+ * @param {number} otherSocial - その他社会保険料
+ * @returns {object} 控除額の詳細
+ */
+function calculateSocialInsuranceDeduction(nationalPension, nationalHealth, otherSocial) {
+    const result = {
+        nationalPension: parseInt(nationalPension) || 0,
+        nationalHealth: parseInt(nationalHealth) || 0,
+        otherSocial: parseInt(otherSocial) || 0,
+        total: 0
+    };
+
+    result.total = result.nationalPension + result.nationalHealth + result.otherSocial;
+
+    return result;
+}
+
+/**
+ * 小規模企業共済等掛金控除額を計算（全額控除）
+ * @param {number} iDeCoAmount - iDeCo掛金額
+ * @param {number} mutualAidAmount - 小規模企業共済掛金額
+ * @returns {object} 控除額の詳細
+ */
+function calculateSmallEnterpriseDeduction(iDeCoAmount, mutualAidAmount) {
+    const result = {
+        iDeCo: parseInt(iDeCoAmount) || 0,
+        mutualAid: parseInt(mutualAidAmount) || 0,
+        total: 0
+    };
+
+    result.total = result.iDeCo + result.mutualAid;
+
+    return result;
+}
