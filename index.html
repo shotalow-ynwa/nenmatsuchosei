@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="年末調整の手書き対応における記入難易度の高い書類について、従業員の記入をサポートする入力補助ツール（令和7年版）">
+    <title>年末調整書類記入サポートツール - 令和7年版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <h1>年末調整書類記入サポートツール</h1>
+            <p class="subtitle">令和7年版 - 基礎控除等申告書</p>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <div class="container">
+        <!-- タブナビゲーション -->
+        <nav class="tabs" role="tablist">
+            <button class="tab-button active" data-tab="basic" role="tab" aria-selected="true" aria-controls="basic-tab">
+                基礎控除申告書
+            </button>
+            <button class="tab-button" data-tab="spouse" role="tab" aria-selected="false" aria-controls="spouse-tab">
+                配偶者控除等申告書
+            </button>
+            <button class="tab-button" data-tab="dependent" role="tab" aria-selected="false" aria-controls="dependent-tab">
+                特定親族特別控除申告書
+            </button>
+            <button class="tab-button" data-tab="adjustment" role="tab" aria-selected="false" aria-controls="adjustment-tab">
+                所得金額調整控除申告書
+            </button>
+        </nav>
+
+        <!-- タブコンテンツ -->
+
+        <!-- 基礎控除申告書 -->
+        <div id="basic-tab" class="tab-content active" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">1</span>
+                        基本情報入力
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    給与所得者の基礎控除申告書は、年末調整で基礎控除を受けるために必要な書類です。<br>
+                    あなたの年収と所得に応じて、基礎控除額と区分（A/B/C）を自動計算します。
+                </div>
+
+                <form id="basic-form">
+                    <div class="form-group">
+                        <label for="name" class="form-label required">氏名</label>
+                        <input
+                            type="text"
+                            id="name"
+                            class="form-input"
+                            placeholder="山田 太郎"
+                            autocomplete="name"
+                            aria-required="true"
+                        >
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="annualSalary" class="form-label required">
+                                年間給与収入額（見込み）
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        今年1月1日から12月31日までの給与・賞与の合計額（税金や保険料を引く前の金額）を入力してください。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="annualSalary"
+                                class="form-input"
+                                placeholder="5,000,000"
+                                inputmode="numeric"
+                                aria-required="true"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="otherIncome" class="form-label">
+                                給与以外の所得金額
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        給与以外の所得（事業所得、不動産所得、雑所得など）がある場合に入力してください。ない場合は0のままで構いません。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="otherIncome"
+                                class="form-input"
+                                placeholder="0"
+                                inputmode="numeric"
+                                value="0"
+                            >
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 基礎控除の計算結果 -->
+            <div id="basic-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+        </div>
+
+        <!-- 配偶者控除等申告書 -->
+        <div id="spouse-tab" class="tab-content" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">2</span>
+                        配偶者情報入力
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    配偶者控除等申告書は、配偶者の所得に応じて配偶者控除または配偶者特別控除を受けるための書類です。<br>
+                    配偶者の収入と年齢に基づいて、適用される控除額を自動計算します。
+                </div>
+
+                <div class="checkbox-group">
+                    <input
+                        type="checkbox"
+                        id="hasSpouse"
+                        class="checkbox-input"
+                    >
+                    <label for="hasSpouse" class="checkbox-label">
+                        配偶者がいる
+                    </label>
+                </div>
+
+                <div id="spouse-section" class="hidden">
+                    <form id="spouse-form">
+                        <div class="form-group">
+                            <label for="spouseName" class="form-label required">配偶者の氏名</label>
+                            <input
+                                type="text"
+                                id="spouseName"
+                                class="form-input"
+                                placeholder="山田 花子"
+                                autocomplete="name"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="spouseBirthDate" class="form-label">
+                                配偶者の生年月日
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        配偶者が70歳以上の場合、老人控除対象配偶者として控除額が増額されます。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="spouseBirthDate"
+                                class="form-input"
+                                placeholder="1990/01/01"
+                            >
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="spouseSalary" class="form-label required">
+                                    配偶者の年間給与収入額
+                                </label>
+                                <input
+                                    type="text"
+                                    id="spouseSalary"
+                                    class="form-input"
+                                    placeholder="1,030,000"
+                                    inputmode="numeric"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="spouseOtherIncome" class="form-label">
+                                    配偶者の給与以外の所得
+                                </label>
+                                <input
+                                    type="text"
+                                    id="spouseOtherIncome"
+                                    class="form-input"
+                                    placeholder="0"
+                                    inputmode="numeric"
+                                    value="0"
+                                >
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 配偶者控除等の計算結果 -->
+            <div id="spouse-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+        </div>
+
+        <!-- 特定親族特別控除申告書 -->
+        <div id="dependent-tab" class="tab-content" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">3</span>
+                        特定親族情報入力
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    特定親族特別控除は、令和7年度から新設された控除制度です。<br>
+                    19歳以上23歳未満の扶養親族で、所得が58万円超123万円以下の場合に適用されます。<br>
+                    （通常の扶養控除の対象外となる所得範囲で、最大25万円の控除が受けられます）
+                </div>
+
+                <div class="checkbox-group">
+                    <input
+                        type="checkbox"
+                        id="hasSpecificDependent"
+                        class="checkbox-input"
+                    >
+                    <label for="hasSpecificDependent" class="checkbox-label">
+                        19歳以上23歳未満の扶養親族がいる（所得58万円超123万円以下）
+                    </label>
+                </div>
+
+                <div id="dependent-section" class="hidden">
+                    <form id="dependent-form">
+                        <div class="form-group">
+                            <label for="dependentName" class="form-label required">特定親族の氏名</label>
+                            <input
+                                type="text"
+                                id="dependentName"
+                                class="form-input"
+                                placeholder="山田 一郎"
+                                autocomplete="name"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dependentBirthDate" class="form-label required">
+                                特定親族の生年月日
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        令和7年12月31日時点で19歳以上23歳未満（平成15年1月2日～平成19年1月1日生まれ）が対象です。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="dependentBirthDate"
+                                class="form-input"
+                                placeholder="2005/06/15"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dependentSalary" class="form-label required">
+                                特定親族の年間給与収入額
+                                <span class="tooltip">
+                                    <span class="help-icon">?</span>
+                                    <span class="tooltip-text">
+                                        所得58万円超123万円以下が対象です。給与収入では、約113万円超178万円以下に相当します。
+                                    </span>
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="dependentSalary"
+                                class="form-input"
+                                placeholder="1,500,000"
+                                inputmode="numeric"
+                            >
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 特定親族特別控除の計算結果 -->
+            <div id="dependent-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+        </div>
+
+        <!-- 所得金額調整控除申告書 -->
+        <div id="adjustment-tab" class="tab-content" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="step-badge">4</span>
+                        所得金額調整控除の要件確認
+                    </h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ 説明</strong><br>
+                    所得金額調整控除は、年収850万円超の給与所得者で、特別障害者または23歳未満の扶養親族がいる場合に適用されます。<br>
+                    控除額は最大15万円です。
+                </div>
+
+                <div class="checkbox-group">
+                    <input
+                        type="checkbox"
+                        id="hasIncomeAdjustment"
+                        class="checkbox-input"
+                    >
+                    <label for="hasIncomeAdjustment" class="checkbox-label">
+                        年収が850万円を超えている
+                    </label>
+                </div>
+
+                <div id="adjustment-section" class="hidden">
+                    <div class="alert alert-warning">
+                        以下のいずれかに該当する必要があります
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input
+                            type="checkbox"
+                            id="hasSpecialDisabled"
+                            class="checkbox-input"
+                        >
+                        <label for="hasSpecialDisabled" class="checkbox-label">
+                            本人が特別障害者、または同一生計配偶者・扶養親族が特別障害者
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input
+                            type="checkbox"
+                            id="hasYoungDependent"
+                            class="checkbox-input"
+                        >
+                        <label for="hasYoungDependent" class="checkbox-label">
+                            23歳未満の扶養親族がいる
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 所得金額調整控除の計算結果 -->
+            <div id="adjustment-result" class="result-section hidden" role="region" aria-live="polite">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+        </div>
+
+        <!-- 操作ボタン -->
+        <div class="card no-print">
+            <div class="button-group">
+                <button id="printButton" class="button button-primary">
+                    🖨️ 印刷
+                </button>
+                <button id="saveButton" class="button button-secondary">
+                    💾 データ保存
+                </button>
+                <button id="exportButton" class="button button-outline">
+                    📊 CSV出力
+                </button>
+                <button id="clearButton" class="button button-outline">
+                    🗑️ クリア
+                </button>
+            </div>
+
+            <div class="alert alert-info mt-3">
+                <strong>💡 ヒント</strong><br>
+                入力したデータはブラウザに自動保存されます（外部サーバーには送信されません）。<br>
+                計算結果を確認したら、印刷ボタンで印刷プレビューを表示し、手書き書類の記入に役立ててください。
+            </div>
+        </div>
+
+    </div>
+
+    <!-- フッター -->
+    <footer class="no-print" style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.875rem;">
+        <p>年末調整書類記入サポートツール（令和7年版）</p>
+        <p>※ このツールは計算補助を目的としています。最終的な申告内容は勤務先の指示に従ってください。</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="calculator.js"></script>
+    <script src="validator.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
