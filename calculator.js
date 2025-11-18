@@ -5,26 +5,27 @@
 
 // 定数定義
 const TAX_CONSTANTS = {
-    // 基礎控除額（令和7年）
-    BASIC_DEDUCTION: {
-        FULL: 480000,      // 48万円（所得2,400万円以下）
-        REDUCED_1: 320000, // 32万円（所得2,400万円超2,450万円以下）
-        REDUCED_2: 160000, // 16万円（所得2,450万円超2,500万円以下）
-        ZERO: 0            // 0円（所得2,500万円超）
-    },
+    // 基礎控除テーブル（令和7年分）
+    // 合計所得金額に応じた基礎控除額
+    // 根拠：国税庁「令和7年分の年末調整のための算出所得税額の速算表」末尾の
+    //       「〔参考〕令和7年分の基礎控除額の表」
+    BASIC_DEDUCTION_TABLE: [
+        { maxTotalIncome: 1320000,  amount: 950000 },  // 1,320,000円以下
+        { maxTotalIncome: 3360000,  amount: 880000 },  // 1,320,000円超〜3,360,000円以下
+        { maxTotalIncome: 4890000,  amount: 680000 },  // 3,360,000円超〜4,890,000円以下
+        { maxTotalIncome: 6550000,  amount: 630000 },  // 4,890,000円超〜6,550,000円以下
+        { maxTotalIncome: 23500000, amount: 580000 },  // 6,550,000円超〜23,500,000円以下
+        { maxTotalIncome: 24000000, amount: 480000 },  // 23,500,000円超〜24,000,000円以下
+        { maxTotalIncome: 24500000, amount: 320000 },  // 24,000,000円超〜24,500,000円以下
+        { maxTotalIncome: 25000000, amount: 160000 },  // 24,500,000円超〜25,000,000円以下
+        // 25,000,000円超は0円
+    ],
 
     // 基礎控除の区分判定基準
     BASIC_DEDUCTION_THRESHOLD: {
         THRESHOLD_1: 9000000,  // 900万円（区分Aの上限）
         THRESHOLD_2: 9500000,  // 950万円（区分Bの上限）
         THRESHOLD_3: 10000000  // 1,000万円（区分Cの上限）
-    },
-
-    // 所得判定基準
-    INCOME_THRESHOLD: {
-        BASIC_1: 24000000,  // 2,400万円
-        BASIC_2: 24500000,  // 2,450万円
-        BASIC_3: 25000000   // 2,500万円
     },
 
     // 配偶者控除額
@@ -50,7 +51,7 @@ const TAX_CONSTANTS = {
 };
 
 /**
- * 給与所得控除後の給与所得を計算
+ * 給与所得控除後の給与所得を計算（令和7年版）
  * @param {number} annualSalary - 年間給与収入額
  * @returns {number} 給与所得控除後の所得金額
  */
@@ -62,29 +63,34 @@ function calculateSalaryIncome(annualSalary) {
     }
 
     // 令和7年の給与所得控除
+    // 根拠：国税庁「令和7年度税制改正（基礎控除の見直し等関係）Q&A」1-3
     // 給与所得 = 給与収入 - 給与所得控除額
-    let deduction;
+    let deduction; // 給与所得控除額
 
     if (salary <= 1625000) {
-        // 162.5万円以下：控除額55万円
-        deduction = 550000;
+        // 【改正ポイント】
+        // 162.5万円以下：控除額65万円（最低保障額）
+        // （改正前：55万円 → 改正後：65万円）
+        deduction = 650000;
     } else if (salary <= 1800000) {
-        // 162.5万円超180万円以下：収入 × 40% - 10万円
+        // 162.5万円超〜180万円以下：収入 × 40% − 10万円（改正なし）
         deduction = Math.floor(salary * 0.4) - 100000;
     } else if (salary <= 3600000) {
-        // 180万円超360万円以下：収入 × 30% + 8万円
+        // 180万円超〜360万円以下：収入 × 30% ＋ 8万円（改正なし）
         deduction = Math.floor(salary * 0.3) + 80000;
     } else if (salary <= 6600000) {
-        // 360万円超660万円以下：収入 × 20% + 44万円
+        // 360万円超〜660万円以下：収入 × 20% ＋ 44万円（改正なし）
         deduction = Math.floor(salary * 0.2) + 440000;
     } else if (salary <= 8500000) {
-        // 660万円超850万円以下：収入 × 10% + 110万円
+        // 660万円超〜850万円以下：収入 × 10% ＋ 110万円（改正なし）
         deduction = Math.floor(salary * 0.1) + 1100000;
     } else {
-        // 850万円超：控除額195万円（上限）
+        // 850万円超：控除額195万円（上限）（改正なし）
         deduction = 1950000;
     }
 
+    // 給与所得 ＝ 給与収入 − 給与所得控除額
+    // 0未満は切り上げて0円
     return Math.max(0, salary - deduction);
 }
 
@@ -99,20 +105,22 @@ function calculateTotalIncome(salaryIncome, otherIncome = 0) {
 }
 
 /**
- * 基礎控除額を判定
+ * 基礎控除額を判定（令和7年版）
  * @param {number} totalIncome - 合計所得金額
  * @returns {number} 基礎控除額
  */
 function calculateBasicDeduction(totalIncome) {
-    if (totalIncome <= TAX_CONSTANTS.INCOME_THRESHOLD.BASIC_1) {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.FULL;
-    } else if (totalIncome <= TAX_CONSTANTS.INCOME_THRESHOLD.BASIC_2) {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.REDUCED_1;
-    } else if (totalIncome <= TAX_CONSTANTS.INCOME_THRESHOLD.BASIC_3) {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.REDUCED_2;
-    } else {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.ZERO;
+    const income = parseInt(totalIncome) || 0;
+
+    // テーブルに従って控除額を決定
+    for (const row of TAX_CONSTANTS.BASIC_DEDUCTION_TABLE) {
+        if (income <= row.maxTotalIncome) {
+            return row.amount;
+        }
     }
+
+    // 25,000,000円超は基礎控除なし
+    return 0;
 }
 
 /**
