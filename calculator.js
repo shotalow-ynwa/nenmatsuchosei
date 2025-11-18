@@ -5,13 +5,21 @@
 
 // 定数定義
 const TAX_CONSTANTS = {
-    // 基礎控除額（令和7年）
-    BASIC_DEDUCTION: {
-        FULL: 480000,      // 48万円（所得2,400万円以下）
-        REDUCED_1: 320000, // 32万円（所得2,400万円超2,450万円以下）
-        REDUCED_2: 160000, // 16万円（所得2,450万円超2,500万円以下）
-        ZERO: 0            // 0円（所得2,500万円超）
-    },
+    // 基礎控除テーブル（令和7年分）
+    // 合計所得金額に応じた基礎控除額
+    // 根拠：国税庁「令和7年分の年末調整のための算出所得税額の速算表」末尾の
+    //       「〔参考〕令和7年分の基礎控除額の表」
+    BASIC_DEDUCTION_TABLE: [
+        { maxTotalIncome: 1320000,  amount: 950000 },  // 1,320,000円以下
+        { maxTotalIncome: 3360000,  amount: 880000 },  // 1,320,000円超〜3,360,000円以下
+        { maxTotalIncome: 4890000,  amount: 680000 },  // 3,360,000円超〜4,890,000円以下
+        { maxTotalIncome: 6550000,  amount: 630000 },  // 4,890,000円超〜6,550,000円以下
+        { maxTotalIncome: 23500000, amount: 580000 },  // 6,550,000円超〜23,500,000円以下
+        { maxTotalIncome: 24000000, amount: 480000 },  // 23,500,000円超〜24,000,000円以下
+        { maxTotalIncome: 24500000, amount: 320000 },  // 24,000,000円超〜24,500,000円以下
+        { maxTotalIncome: 25000000, amount: 160000 },  // 24,500,000円超〜25,000,000円以下
+        // 25,000,000円超は0円
+    ],
 
     // 基礎控除の区分判定基準
     BASIC_DEDUCTION_THRESHOLD: {
@@ -20,37 +28,65 @@ const TAX_CONSTANTS = {
         THRESHOLD_3: 10000000  // 1,000万円（区分Cの上限）
     },
 
-    // 所得判定基準
-    INCOME_THRESHOLD: {
-        BASIC_1: 24000000,  // 2,400万円
-        BASIC_2: 24500000,  // 2,450万円
-        BASIC_3: 25000000   // 2,500万円
-    },
-
-    // 配偶者控除額
+    // 配偶者控除額（令和7年分）
+    // 根拠：国税庁タックスアンサー No.1191「配偶者控除」
     SPOUSE_DEDUCTION: {
-        NORMAL: 480000,   // 48万円（一般）
-        ELDERLY: 580000   // 58万円（70歳以上）
+        NORMAL: 380000,   // 38万円（一般の控除対象配偶者）
+        ELDERLY: 480000   // 48万円（老人控除対象配偶者・70歳以上）
     },
 
     // 配偶者特別控除（最大額）
-    SPECIAL_SPOUSE_DEDUCTION_MAX: 480000, // 48万円
+    SPECIAL_SPOUSE_DEDUCTION_MAX: 380000, // 38万円
 
-    // 特定親族特別控除（最大額）
-    SPECIFIC_DEPENDENT_DEDUCTION_MAX: 250000, // 25万円
+    // 特定親族特別控除（最大額・令和7年分）
+    // 根拠：国税庁タックスアンサー No.1177「特定親族特別控除」
+    SPECIFIC_DEPENDENT_DEDUCTION_MAX: 630000, // 63万円
+
+    // 特定親族特別控除テーブル（令和7年分）
+    // 根拠：国税庁タックスアンサー No.1177
+    // min: 特定親族の合計所得金額「超」、max: 「以下」
+    SPECIFIC_DEPENDENT_TABLE: [
+        { min: 580000,  max:  850000, amount: 630000 },  // 58万円超〜85万円以下
+        { min: 850000,  max:  900000, amount: 610000 },  // 85万円超〜90万円以下
+        { min: 900000,  max:  950000, amount: 510000 },  // 90万円超〜95万円以下
+        { min: 950000,  max: 1000000, amount: 410000 },  // 95万円超〜100万円以下
+        { min: 1000000, max: 1050000, amount: 310000 },  // 100万円超〜105万円以下
+        { min: 1050000, max: 1100000, amount: 210000 },  // 105万円超〜110万円以下
+        { min: 1100000, max: 1150000, amount: 110000 },  // 110万円超〜115万円以下
+        { min: 1150000, max: 1200000, amount:  60000 },  // 115万円超〜120万円以下
+        { min: 1200000, max: 1230000, amount:  30000 }   // 120万円超〜123万円以下
+    ],
 
     // 所得金額調整控除（最大額）
     INCOME_ADJUSTMENT_DEDUCTION_MAX: 150000, // 15万円
 
-    // 配偶者の所得要件
+    // 配偶者の所得要件（令和7年分）
+    // 根拠：国税庁タックスアンサー No.1191, No.1195
     SPOUSE_INCOME: {
-        DEDUCTION_LIMIT: 480000,   // 48万円（控除対象配偶者）
-        SPECIAL_LIMIT: 1330000     // 133万円（配偶者特別控除）
-    }
+        DEDUCTION_LIMIT: 580000,   // 58万円以下 → 配偶者控除
+        SPECIAL_MIN: 580001,       // 58万円超  → 配偶者特別控除
+        SPECIAL_MAX: 1330000       // 133万円以下
+    },
+
+    // 配偶者特別控除テーブル（令和7年分）
+    // 根拠：国税庁タックスアンサー No.1195「配偶者特別控除」
+    // min: 配偶者の合計所得金額「超」、max: 「以下」
+    // amount900/950/1000: 本人の合計所得金額が900万/950万/1,000万円以下の場合の控除額
+    SPOUSE_SPECIAL_TABLE: [
+        { min: 580000,  max:  950000, amount900: 380000, amount950: 260000, amount1000: 130000 },
+        { min: 950000,  max: 1000000, amount900: 360000, amount950: 240000, amount1000: 120000 },
+        { min: 1000000, max: 1050000, amount900: 310000, amount950: 210000, amount1000: 110000 },
+        { min: 1050000, max: 1100000, amount900: 260000, amount950: 180000, amount1000:  90000 },
+        { min: 1100000, max: 1150000, amount900: 210000, amount950: 140000, amount1000:  70000 },
+        { min: 1150000, max: 1200000, amount900: 160000, amount950: 110000, amount1000:  60000 },
+        { min: 1200000, max: 1250000, amount900: 110000, amount950:  80000, amount1000:  40000 },
+        { min: 1250000, max: 1300000, amount900:  60000, amount950:  40000, amount1000:  20000 },
+        { min: 1300000, max: 1330000, amount900:  30000, amount950:  20000, amount1000:  10000 }
+    ]
 };
 
 /**
- * 給与所得控除後の給与所得を計算
+ * 給与所得控除後の給与所得を計算（令和7年版）
  * @param {number} annualSalary - 年間給与収入額
  * @returns {number} 給与所得控除後の所得金額
  */
@@ -62,29 +98,34 @@ function calculateSalaryIncome(annualSalary) {
     }
 
     // 令和7年の給与所得控除
+    // 根拠：国税庁「令和7年度税制改正（基礎控除の見直し等関係）Q&A」1-3
     // 給与所得 = 給与収入 - 給与所得控除額
-    let deduction;
+    let deduction; // 給与所得控除額
 
     if (salary <= 1625000) {
-        // 162.5万円以下：控除額55万円
-        deduction = 550000;
+        // 【改正ポイント】
+        // 162.5万円以下：控除額65万円（最低保障額）
+        // （改正前：55万円 → 改正後：65万円）
+        deduction = 650000;
     } else if (salary <= 1800000) {
-        // 162.5万円超180万円以下：収入 × 40% - 10万円
+        // 162.5万円超〜180万円以下：収入 × 40% − 10万円（改正なし）
         deduction = Math.floor(salary * 0.4) - 100000;
     } else if (salary <= 3600000) {
-        // 180万円超360万円以下：収入 × 30% + 8万円
+        // 180万円超〜360万円以下：収入 × 30% ＋ 8万円（改正なし）
         deduction = Math.floor(salary * 0.3) + 80000;
     } else if (salary <= 6600000) {
-        // 360万円超660万円以下：収入 × 20% + 44万円
+        // 360万円超〜660万円以下：収入 × 20% ＋ 44万円（改正なし）
         deduction = Math.floor(salary * 0.2) + 440000;
     } else if (salary <= 8500000) {
-        // 660万円超850万円以下：収入 × 10% + 110万円
+        // 660万円超〜850万円以下：収入 × 10% ＋ 110万円（改正なし）
         deduction = Math.floor(salary * 0.1) + 1100000;
     } else {
-        // 850万円超：控除額195万円（上限）
+        // 850万円超：控除額195万円（上限）（改正なし）
         deduction = 1950000;
     }
 
+    // 給与所得 ＝ 給与収入 − 給与所得控除額
+    // 0未満は切り上げて0円
     return Math.max(0, salary - deduction);
 }
 
@@ -99,20 +140,22 @@ function calculateTotalIncome(salaryIncome, otherIncome = 0) {
 }
 
 /**
- * 基礎控除額を判定
+ * 基礎控除額を判定（令和7年版）
  * @param {number} totalIncome - 合計所得金額
  * @returns {number} 基礎控除額
  */
 function calculateBasicDeduction(totalIncome) {
-    if (totalIncome <= TAX_CONSTANTS.INCOME_THRESHOLD.BASIC_1) {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.FULL;
-    } else if (totalIncome <= TAX_CONSTANTS.INCOME_THRESHOLD.BASIC_2) {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.REDUCED_1;
-    } else if (totalIncome <= TAX_CONSTANTS.INCOME_THRESHOLD.BASIC_3) {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.REDUCED_2;
-    } else {
-        return TAX_CONSTANTS.BASIC_DEDUCTION.ZERO;
+    const income = parseInt(totalIncome) || 0;
+
+    // テーブルに従って控除額を決定
+    for (const row of TAX_CONSTANTS.BASIC_DEDUCTION_TABLE) {
+        if (income <= row.maxTotalIncome) {
+            return row.amount;
+        }
     }
+
+    // 25,000,000円超は基礎控除なし
+    return 0;
 }
 
 /**
@@ -177,21 +220,24 @@ function calculateSpouseDeduction(ownTotalIncome, spouseTotalIncome, spouseBirth
 
     const isElderly = isElderlySpouse(spouseBirthDate);
 
-    // 配偶者の所得による判定
+    // 配偶者の所得による判定（令和7年版）
     if (spouseTotalIncome <= TAX_CONSTANTS.SPOUSE_INCOME.DEDUCTION_LIMIT) {
-        // 配偶者控除
+        // 配偶者控除（58万円以下）
         result.type = '配偶者控除';
 
         if (ownTotalIncome <= 9000000) {
+            // 本人所得900万円以下：一般38万円、老人48万円
             result.deduction = isElderly ? TAX_CONSTANTS.SPOUSE_DEDUCTION.ELDERLY : TAX_CONSTANTS.SPOUSE_DEDUCTION.NORMAL;
         } else if (ownTotalIncome <= 9500000) {
-            result.deduction = isElderly ? 387000 : 320000;
+            // 本人所得900万円超〜950万円以下：一般26万円、老人32万円
+            result.deduction = isElderly ? 320000 : 260000;
         } else if (ownTotalIncome <= 10000000) {
-            result.deduction = isElderly ? 193000 : 160000;
+            // 本人所得950万円超〜1,000万円以下：一般13万円、老人16万円
+            result.deduction = isElderly ? 160000 : 130000;
         }
 
-    } else if (spouseTotalIncome <= TAX_CONSTANTS.SPOUSE_INCOME.SPECIAL_LIMIT) {
-        // 配偶者特別控除
+    } else if (spouseTotalIncome <= TAX_CONSTANTS.SPOUSE_INCOME.SPECIAL_MAX) {
+        // 配偶者特別控除（58万円超〜133万円以下）
         result.type = '配偶者特別控除';
         result.deduction = calculateSpecialSpouseDeduction(ownTotalIncome, spouseTotalIncome);
     } else {
@@ -202,64 +248,40 @@ function calculateSpouseDeduction(ownTotalIncome, spouseTotalIncome, spouseBirth
 }
 
 /**
- * 配偶者特別控除額を計算
+ * 配偶者特別控除額を計算（令和7年版）
  * @param {number} ownTotalIncome - 本人の合計所得金額
  * @param {number} spouseTotalIncome - 配偶者の合計所得金額
  * @returns {number} 配偶者特別控除額
  */
 function calculateSpecialSpouseDeduction(ownTotalIncome, spouseTotalIncome) {
-    // 配偶者の所得金額による控除額の判定
-    let baseAmount = 0;
-
-    if (spouseTotalIncome <= 500000) {
-        baseAmount = 480000;
-    } else if (spouseTotalIncome <= 550000) {
-        baseAmount = 480000;
-    } else if (spouseTotalIncome <= 600000) {
-        baseAmount = 460000;
-    } else if (spouseTotalIncome <= 650000) {
-        baseAmount = 440000;
-    } else if (spouseTotalIncome <= 700000) {
-        baseAmount = 420000;
-    } else if (spouseTotalIncome <= 750000) {
-        baseAmount = 400000;
-    } else if (spouseTotalIncome <= 800000) {
-        baseAmount = 360000;
-    } else if (spouseTotalIncome <= 850000) {
-        baseAmount = 320000;
-    } else if (spouseTotalIncome <= 900000) {
-        baseAmount = 280000;
-    } else if (spouseTotalIncome <= 950000) {
-        baseAmount = 240000;
-    } else if (spouseTotalIncome <= 1000000) {
-        baseAmount = 200000;
-    } else if (spouseTotalIncome <= 1050000) {
-        baseAmount = 160000;
-    } else if (spouseTotalIncome <= 1100000) {
-        baseAmount = 120000;
-    } else if (spouseTotalIncome <= 1150000) {
-        baseAmount = 80000;
-    } else if (spouseTotalIncome <= 1200000) {
-        baseAmount = 40000;
-    } else if (spouseTotalIncome <= 1250000) {
-        baseAmount = 20000;
-    } else if (spouseTotalIncome <= 1300000) {
-        baseAmount = 10000;
-    } else if (spouseTotalIncome <= 1330000) {
-        baseAmount = 10000;
-    } else {
+    // 本人の所得が1,000万円超の場合は控除なし
+    if (ownTotalIncome > 10000000) {
         return 0;
     }
 
-    // 本人の所得による減額
-    if (ownTotalIncome <= 9000000) {
-        return baseAmount;
-    } else if (ownTotalIncome <= 9500000) {
-        return Math.floor(baseAmount * 2 / 3);
-    } else if (ownTotalIncome <= 10000000) {
-        return Math.floor(baseAmount * 1 / 3);
-    } else {
+    // 配偶者の所得が58万円以下または133万円超の場合は控除なし
+    if (spouseTotalIncome <= TAX_CONSTANTS.SPOUSE_INCOME.DEDUCTION_LIMIT ||
+        spouseTotalIncome > TAX_CONSTANTS.SPOUSE_INCOME.SPECIAL_MAX) {
         return 0;
+    }
+
+    // テーブルから該当する行を検索
+    const row = TAX_CONSTANTS.SPOUSE_SPECIAL_TABLE.find(r =>
+        spouseTotalIncome > r.min && spouseTotalIncome <= r.max
+    );
+
+    if (!row) {
+        return 0;
+    }
+
+    // 本人の所得金額に応じた控除額を返す
+    if (ownTotalIncome <= 9000000) {
+        return row.amount900;
+    } else if (ownTotalIncome <= 9500000) {
+        return row.amount950;
+    } else {
+        // ownTotalIncome <= 10000000
+        return row.amount1000;
     }
 }
 
@@ -288,7 +310,7 @@ function isSpecificDependentAge(birthDate, targetYear = 2025) {
 }
 
 /**
- * 特定親族特別控除額を計算
+ * 特定親族特別控除額を計算（令和7年版）
  * @param {number} ownTotalIncome - 本人の合計所得金額
  * @param {number} dependentIncome - 特定親族の所得金額
  * @param {string} dependentBirthDate - 特定親族の生年月日
@@ -300,6 +322,12 @@ function calculateSpecificDependentDeduction(ownTotalIncome, dependentIncome, de
         eligible: false,
         message: ''
     };
+
+    // 本人の所得が1,000万円超の場合は控除なし
+    if (ownTotalIncome > 10000000) {
+        result.message = '本人の所得が1,000万円を超えるため、控除の適用はありません';
+        return result;
+    }
 
     // 年齢要件チェック（19歳以上23歳未満）
     if (!isSpecificDependentAge(dependentBirthDate)) {
@@ -318,20 +346,18 @@ function calculateSpecificDependentDeduction(ownTotalIncome, dependentIncome, de
         return result;
     }
 
-    // 本人の所得による控除額の判定
-    let baseAmount = TAX_CONSTANTS.SPECIFIC_DEPENDENT_DEDUCTION_MAX;
+    // テーブルから該当する行を検索
+    const row = TAX_CONSTANTS.SPECIFIC_DEPENDENT_TABLE.find(r =>
+        dependentIncome > r.min && dependentIncome <= r.max
+    );
 
-    if (ownTotalIncome <= 9000000) {
-        result.deduction = baseAmount;
-    } else if (ownTotalIncome <= 9500000) {
-        result.deduction = Math.floor(baseAmount * 2 / 3); // 約16.7万円
-    } else if (ownTotalIncome <= 10000000) {
-        result.deduction = Math.floor(baseAmount * 1 / 3); // 約8.3万円
-    } else {
-        result.message = '本人の所得が1,000万円を超えるため、控除の適用はありません';
+    if (!row) {
+        result.message = '所得要件を満たさないため、特定親族特別控除の適用はありません';
         return result;
     }
 
+    // 控除額を取得（令和7年版では本人の所得による減額は適用されない）
+    result.deduction = row.amount;
     result.eligible = true;
     result.message = '特定親族特別控除が適用されます';
 
@@ -339,7 +365,7 @@ function calculateSpecificDependentDeduction(ownTotalIncome, dependentIncome, de
 }
 
 /**
- * 所得金額調整控除を計算
+ * 所得金額調整控除を計算（令和7年版）
  * @param {number} annualSalary - 年間給与収入額
  * @param {boolean} hasSpecialDisabled - 特別障害者の有無
  * @param {boolean} hasYoungDependent - 23歳未満の扶養親族の有無
@@ -366,9 +392,13 @@ function calculateIncomeAdjustmentDeduction(annualSalary, hasSpecialDisabled = f
         return result;
     }
 
-    // 控除額の計算：(給与収入 - 850万円) × 10%（上限15万円）
-    const excess = Math.min(salary - 8500000, 1500000); // 上限1,000万円-850万円=150万円
-    result.deduction = Math.min(Math.floor(excess * 0.1), TAX_CONSTANTS.INCOME_ADJUSTMENT_DEDUCTION_MAX);
+    // 控除額の計算：{給与収入（1,000万円上限）- 850万円} × 10%
+    // 根拠：国税庁タックスアンサー No.1411
+    // 1円未満の端数は切り上げ、上限15万円
+    const cappedSalary = Math.min(salary, 10000000);  // 給与収入に1,000万円の上限を適用
+    const excess = cappedSalary - 8500000;
+    const raw = excess * 0.1;
+    result.deduction = Math.min(Math.ceil(raw), TAX_CONSTANTS.INCOME_ADJUSTMENT_DEDUCTION_MAX);
     result.eligible = true;
     result.message = '所得金額調整控除が適用されます';
 
